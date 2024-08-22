@@ -24,6 +24,7 @@ from typing import Dict, Optional, Tuple
 from control.chargelog import chargelog
 from control import cp_interruption
 from control import data
+from control import optional
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
 from control.chargepoint.chargepoint_template import CpTemplate
@@ -37,6 +38,7 @@ from helpermodules.pub import Pub
 from helpermodules import timecheck
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from helpermodules.timecheck import create_timestamp
+import asyncio
 
 
 def get_chargepoint_config_default() -> dict:
@@ -211,6 +213,25 @@ class Chargepoint(ChargepointRfidMixin):
     def _process_charge_stop(self) -> None:
         # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
         # werden soll (-1), Daten zurücksetzen.
+        # Ocpp Stop Funktion aufrufen
+        if not self.data.get.plug_state and self.data.set.ocpp_transaction_id is not None:
+            if self.data.set.rfid is not None:
+                rfid = self.data.set.rfid
+            else:
+                rfid = "0"
+            transaction_id = self.data.set.ocpp_transaction_id
+            try:
+                ocpp_client = optional.OCPPClient()
+                asyncio.run(
+                    ocpp_client._stop_transaction(
+                        int(self.data.get.imported), transaction_id,
+                        rfid))
+            except Exception:
+                log.exception("Fehler im OCPP-Modul _stop_transaction()")
+            Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_id", None)
+            self.data.set.ocpp_transaction_active = False
+            Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_active",
+                      self.data.set.ocpp_transaction_active)
         if self.data.set.charging_ev_prev != -1:
             # Daten zurücksetzen, wenn nicht geladen werden soll.
             self.reset_control_parameter_at_charge_stop()
@@ -692,6 +713,26 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.control_parameter.submode = "stop"
             else:
                 self._pub_configured_ev(ev_list)
+            # OCPP Start Transaction nach Anstecken
+            if (self.data.get.plug_state and
+                    self.data.set.ocpp_transaction_active is False and
+                    self.data.set.manual_lock is False):
+                if self.data.set.rfid is not None:
+                    rfid = self.data.set.rfid
+                else:
+                    rfid = "0"
+                try:
+                    ocpp_client = optional.OCPPClient()
+                    self.data.set.ocpp_transaction_id = asyncio.run(
+                        ocpp_client._start_transaction(
+                            self.num, rfid, int(self.data.get.imported)))
+                    Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                              "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)
+                    self.data.set.ocpp_transaction_active = True
+                    Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_active",
+                              self.data.set.ocpp_transaction_active)
+                except Exception:
+                    log.exception("Fehler im OCPP-Modul _start_transaction()")
             # SoC nach Anstecken aktualisieren
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.get.plug_state is False and self.data.set.plug_state_prev)):

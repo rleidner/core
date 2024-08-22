@@ -530,6 +530,7 @@ class SetData:
                 elif ("/set/manual_lock" in msg.topic or
                         "/set/perform_control_pilot_interruption" in msg.topic or
                         "/set/perform_phase_switch" in msg.topic or
+                        "/set/ocpp_transaction_active" in msg.topic or
                         "/set/plug_state_prev" in msg.topic):
                     self._validate_value(msg, bool)
                 elif "/set/autolock_state" in msg.topic:
@@ -537,6 +538,8 @@ class SetData:
                 elif ("/set/rfid" in msg.topic or
                         "/set/plug_time" in msg.topic):
                     self._validate_value(msg, float)
+                elif "/set/ocpp_transaction_id" in msg.topic:
+                    self._validate_value(msg, int)
                 elif "/set/log" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/config/ev" in msg.topic:
@@ -833,6 +836,8 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/rfid/active" in msg.topic:
                 self._validate_value(msg, bool)
+            elif "openWB/set/optional/ocpp/url" in msg.topic:
+                self._validate_value(msg, str)
             elif "openWB/set/optional/int_display/rotation" in msg.topic:
                 self._validate_value(msg, int, [(0, 0), (90, 90), (180, 180), (270, 270)])
             elif "openWB/set/optional/int_display/active" in msg.topic:
