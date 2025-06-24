@@ -300,15 +300,15 @@ class Api:
                     try:
                         await self._account[user_id].get_vehicles()
                     except MyBMWAPIError as err:
-                        log.info(self._mode + ": get_vehicles err= " + str(err.__class__) + ": " + str(err))
-                        _err = -1
-                        if 'Internal Server Error' in str(err):
-                            log.info(self._mode + ": get_vehicles : Internal Server Error")
-                            _err = 500
-                        if 'Request Timeout' in str(err):
-                            log.info(self._mode + ": get_vehicles : Request Timeout")
-                            _err = 408
-                        log.info(self._mode + ": get_vehicles : _err=" + str(_err))
+                        log.info(self._mode + ": get_vehicles err= " + str(err.__class__) + ": " + str(err.__dict__))
+                        # _err = -1
+                        # if 'Internal Server Error' in str(err):
+                        #     log.info(self._mode + ": get_vehicles : Internal Server Error")
+                        #     _err = 500
+                        # if 'Request Timeout' in str(err):
+                        #     log.info(self._mode + ": get_vehicles : Request Timeout")
+                        #     _err = 408
+                        # log.info(self._mode + ": get_vehicles : _err=" + str(_err))
                         time.sleep(10)  # experimental: sleep for 10 secs
                         # log.info(self._mode + ": get_vehicles exception " + str(err))
                         log.info("# before except login:" + str(self._auth[user_id].expires_at) +
