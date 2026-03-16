@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 112
+    DATASTORE_VERSION = 113
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2858,3 +2858,13 @@ class UpdateConfig:
         run_command(['pip', 'uninstall', 'bimmer_connected', '-y'], process_exception=True)
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(112)
+
+    def upgrade_datastore_113(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if "openWB/general/charge_log_data_config" == topic:
+                config = decode_payload(payload)
+                if config.get("vehicle_odometer") is None:
+                    config["vehicle_odometer"] = False
+                return {topic: config}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(113)
