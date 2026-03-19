@@ -40,7 +40,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
 
   // local variables
-  let mqttClient: mqtt.MqttClient | undefined = undefined;
+  let mqttClient: mqtt.MqttClient | null = null;
   const mqttConnectionOptions: IClientOptions = {
     protocol: location.protocol == 'https:' ? 'wss' : 'ws',
     protocolVersion: 5,
@@ -61,6 +61,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   // State
   const subscriptions = ref<TopicCount>({});
   const topics = ref<TopicList>({});
+  const mqttClientConnected = ref(false);
 
   // General functions and methods for the store - BEGIN
   /**
@@ -78,6 +79,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       mqttClient = mqtt.connect(connectUrl, options);
       mqttClient.on('connect', () => {
         console.debug('connected to broker');
+        mqttClientConnected.value = true;
         $q.notify({
           type: 'positive',
           message: `MQTT-Verbindung hergestellt.${mqttUser ? ` Angemeldet als ${mqttUser}.` : ''}`,
@@ -96,6 +98,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       });
       mqttClient.on('error', (error) => {
         console.error('Client error', error);
+        mqttClientConnected.value = false;
         $q.notify({
           type: 'negative',
           message:
@@ -148,6 +151,25 @@ export const useMqttStore = defineStore('mqtt', () => {
         } else {
           removeTopic(topic);
         }
+      });
+      mqttClient.on('end', () => {
+        mqttClientConnected.value = false;
+        console.error('mqtt connection ended');
+      });
+      mqttClient.on('close', () => {
+        mqttClientConnected.value = false;
+        console.error('mqtt connection closed');
+      });
+      mqttClient.on('offline', () => {
+        mqttClientConnected.value = false;
+        console.error('mqtt connection offline');
+      });
+      mqttClient.on('disconnect', () => {
+        mqttClientConnected.value = false;
+        console.error('mqtt connection disconnected');
+      });
+      mqttClient.on('reconnect', () => {
+        console.error('mqtt connection reconnecting...');
       });
     } catch (error) {
       console.error('error connecting to broker:', error);
@@ -2079,6 +2101,20 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get temporary charge settings mode selected
+   * @returns boolean
+   */
+  const temporaryChargeModeActive: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/general/temporary_charge_templates_active',
+        undefined,
+        false,
+      ) === true
+    );
+  });
+
+  /**
    * Helper function to update a subtopic of a time charging plan
    * @param chargePointId charge point id
    * @param planId time charging plan id
@@ -3881,6 +3917,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   return {
     topics,
     subscriptions,
+    mqttClientConnected,
     initialize,
     updateTopic,
     updateState: updateTopic, // alias for compatibility with older code
@@ -3921,6 +3958,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointStateMessage,
     chargePointFaultState,
     chargePointFaultMessage,
+    temporaryChargeModeActive,
     chargePointChargeType,
     dcChargingEnabled,
     chargePointConnectedVehicleInfo,
