@@ -135,9 +135,10 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 if _carState.soc_timestamp:
                     _diff = int(_now - _carState.soc_timestamp)
                 if _diff > self.general_config.request_interval_charging and\
-                   vehicle_update_data.charge_state and\
+                   vehicle_update_data.plug_state and\
                    vehicle_update_data.last_soc and\
                    vehicle_update_data.last_soc_timestamp >= vehicle_update_data.plug_time and\
+                   vehicle_update_data.imported - self.calculated_soc_state.last_imported > 0 and\
                    (self.calculated_soc_state.last_imported or vehicle_update_data.imported):
                     _age = int(self.general_config.request_interval_charging / 60)
                     _txt1 = "Ladestand und Reichweite sind berechnet, da der von der Online-Abfrage "
