@@ -139,8 +139,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                    vehicle_update_data.last_soc and\
                    vehicle_update_data.last_soc_timestamp >= vehicle_update_data.plug_time and\
                    vehicle_update_data.imported -\
-                    (self.calculated_soc_state.last_imported or vehicle_update_data.imported) > 0 and\
-                   (self.calculated_soc_state.last_imported or vehicle_update_data.imported):
+                   (self.calculated_soc_state.last_imported or vehicle_update_data.imported) > 0:
                     _age = int(self.general_config.request_interval_charging / 60)
                     _txt1 = "Ladestand und Reichweite sind berechnet, da der von der Online-Abfrage "
                     _txt1 = _txt1 + f"gelieferte Zeitstempel mehr als {_age} min alt ist."
