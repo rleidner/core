@@ -32,11 +32,11 @@ def create_vehicle(vehicle_config: MqttSocSetup, vehicle: int):
                             soc_timestamp=received_topics.get(f"{topic_prefix}soc_timestamp"),
                             odometer=received_topics.get(f"{topic_prefix}odometer"))
         else:
-            _t = f"Keine MQTT-Daten für Fahrzeug {vehicle_config.name} empfangen oder es werden "
-            _t = _t + "veraltete, abwärtskompatible Topics verwendet. Bitte die Doku in den "
-            _t = _t + "Einstellungen beachten"
-            log.error(f"mqtt-nothing received: {_t}")
-            raise Exception(_t)
+            configurable_vehicle.fault_state.warning(
+                f"Keine MQTT-Daten für Fahrzeug {vehicle_config.name} empfangen oder es werden "
+                "veraltete, abwärtskompatible Topics verwendet. Bitte die Doku in den "
+                "Einstellungen beachten.")
+            return None
     configurable_vehicle = ConfigurableVehicle(vehicle_config=vehicle_config,
                                                component_updater=updater,
                                                vehicle=vehicle,
