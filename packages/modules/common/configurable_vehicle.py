@@ -150,8 +150,6 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                                                                         self.calculated_soc_state.last_imported or
                                                                         vehicle_update_data.imported)
                         _carState.odometer = _odometer
-                else:
-                    raise Exception("Für das Fahrzeug sind keine Daten verfügbar.")
             except Exception as e:
                 if vehicle_update_data.plug_state and\
                    vehicle_update_data.last_soc and\
