@@ -14,7 +14,7 @@ class TestSkoda:
     @pytest.fixture(autouse=True)
     def set_up(self, monkeypatch):
         self.mock_context_exit = Mock(return_value=True)
-        self.mock_fetch_soc = Mock(name="fetch_soc", return_value=(50, 250, "2025-10-18T10:00:00Z", 1760822400.0))
+        self.mock_fetch_soc = Mock(name="fetch_soc", return_value=(50, 250, "2025-10-18T10:00:00Z", 1760822400.0, 0))
         self.mock_value_store = Mock(name="value_store")
         monkeypatch.setattr(api, "fetch_soc", self.mock_fetch_soc)
         monkeypatch.setattr(store, "get_car_value_store", Mock(return_value=self.mock_value_store))
