@@ -636,6 +636,14 @@ def get_field_value_by_key(D: dict, key: str) -> str:
     return ret
 
 
+def get_field_timestamp_by_key(D: dict, key: str) -> str:
+    ret = None
+    for f in D:
+        if f['key'] == key:
+            ret = f['timestampUtc']
+    return ret
+
+
 CAR_TIMESTAMP = "car_captured_time"
 
 
@@ -650,6 +658,15 @@ def get_max_value_by_fieldname(D: dict, field: str) -> str:
                 if v > ret:
                     ret = v
     return ret
+
+
+def utc_to_timestamp(d: str) -> float:
+    _epoch = datetime.datetime(1970, 1, 1)
+    _utcformat = "%Y-%m-%dT%H:%M:%SZ"
+    _d = re.sub(r'\....Z', 'Z', d)
+    _dt = datetime.datetime.strptime(_d, _utcformat)
+    _ts = (_dt - _epoch).total_seconds()
+    return _ts
 
 
 class euda():
@@ -770,6 +787,12 @@ class euda():
                         if status:
                             _Data = _data['Data']
                             soc = get_field_value_by_key(_Data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
+                            if soc is not None:
+                                soc_timestamp = get_field_timestamp_by_key(_Data,
+                                                                           'ae0294b4-1286-3e98-a818-1485b8d88430')
+                            if soc_timestamp is None:
+                                soc_timestamp = get_max_value_by_fieldname(_Data, CAR_TIMESTAMP)
+
                             if soc is None:
                                 soc = get_field_value_by_key(_Data, 'f89ed652-d104-3fa6-b7e2-ab7543309e7b')
                             if soc is None:
@@ -780,16 +803,14 @@ class euda():
                             if range is None:
                                 range = get_field_value_by_key(_Data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04')
                             odometer = get_field_value_by_key(_Data, '30cc36fd-71ca-3c09-9296-e94ebd47bd2b')
-                            soc_timestamp = get_field_value_by_key(_Data, '7b76a2c8-162c-3438-814b-0768f6cc6649')
-                            car_timestamp = get_field_value_by_key(_Data, '2496cd73-8a68-318c-a159-200ecfd0e47d')
-                            max_timestamp = get_max_value_by_fieldname(_Data, CAR_TIMESTAMP)
+
+                            soc_timestampxx = utc_to_timestamp(soc_timestamp)
 
                             euda.result[vin] = {
                                 'soc': soc,
                                 'range': range,
                                 'soc_timestamp': soc_timestamp,
-                                'max_timestamp': max_timestamp,
-                                'car_timestamp': car_timestamp,
+                                'soc_timestampxx': soc_timestampxx,
                                 'odometer': odometer,
                             }
                             _ano_j = json.dumps(euda.result, indent=4).replace(vin, ano_vin(vin))
@@ -868,7 +889,7 @@ class euda():
                     _LOGGER.warning(f"no range delivered, calculate range = {range}km")
 
                 ts = euda.result[self.vin]['soc_timestamp']
-                tsxx = euda.result[self.vin]['max_timestamp']
+                tsxx = euda.result[self.vin]['soc_timestampxx']
                 odometer = euda.result[self.vin]['odometer']
 
                 _LOGGER.debug(f"vin             = {self.vin}")
