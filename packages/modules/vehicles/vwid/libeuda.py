@@ -796,21 +796,22 @@ class euda():
             _LOGGER.warning(f"VIN {vin[0:3]} not in brand map, use {DEFAULT_BRAND}")
         brand = VIN_BRAND_MAP.get(vin[0:3], DEFAULT_BRAND)
         _LOGGER.info(f"async Thread started, brand={brand}")
+        client_key = (username, vin)
         try:
             async with aiohttp.ClientSession(headers={'Connection': 'keep-alive'}) as session:
                 _k = str(euda.client.keys()).replace(username, ano_email(username))
                 _LOGGER.info(f"libeuda.Thread client at entry: euda.client.keys={_k}")
                 if username not in euda.client:
                     _LOGGER.debug(f"create new client, key={ano_email(username)}")
-                    euda.client[username] = {}
-                    euda.client[username] = EudaApiClient(session, username, password, brand)
+                    euda.client[client_key] = {}
+                    euda.client[client_key] = EudaApiClient(session, username, password, brand)
                     _k = str(euda.client.keys()).replace(username, ano_email(username))
                     _LOGGER.info(f"libeuda.Thread client: euda.client.keys={_k}")
 
                 meta = None
                 while meta is None:
                     try:
-                        meta = await euda.client[username].async_get_metadata(vin)
+                        meta = await euda.client[client_key].async_get_metadata(vin)
                     except ApiError as err:
                         if "HTTP 500" in str(err):
                             _LOGGER.info(f"Portal not ready/get_metadata, wait {POLL_INTERVAL} seconds")
@@ -831,7 +832,7 @@ class euda():
                         _data = None
                         while _data is None:
                             try:
-                                _name, _data = await _async_update_data(euda.client[username], vin, identifier)
+                                _name, _data = await _async_update_data(euda.client[client_key], vin, identifier)
                             except ApiError as err:
                                 if "HTTP 500" in str(err):
                                     _LOGGER.info(f"Portal not ready/update_data, wait {POLL_INTERVAL} seconds")
@@ -856,6 +857,9 @@ class euda():
 
         except Exception as e:
             _LOGGER.exception(f"thread body failed 0, exception={e}")
+        finally:
+            # Clean up client entry so a restart creates a fresh session
+            euda.client.pop(client_key, None)
 
     def eudaThread(self, username: str, password: str, vin: str):
         _LOGGER.info(f"sync libeuda.eudaThread {threading.current_thread().name} started")
